@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Shopping Site</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+        body { background-color: #f0f0f0; color: #333; font-family: 'Roboto', sans-serif; }
+        .meesho-pink { background-color: #9f2089; }
+        .meesho-text-pink { color: #9f2089; }
+        .meesho-green { color: #038d63; }
+        .meesho-bg-green { background-color: #038d63; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        .bottom-checkout-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 12px 16px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+            max-width: 28rem;
+            margin: 0 auto;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        const products = [
+            { id: 101, name: "Premium Blue Hoodie", price: 200, oldPrice: 300, color: "Blue", img: "https://img.sanishtech.com/u/509cc1bf227d777146d395a8f4de1525.png", category: "200_top" },
+            { id: 102, name: "Classic Black Hoodie", price: 200, oldPrice: 300, color: "Black", img: "https://img.sanishtech.com/u/e5f9dc2d186be3d1037144a0991dbfa0.png", category: "200_top" },
+            { id: 1, name: "Premium Jacket", price: 200, color: "White/Black", img: "https://img.sanishtech.com/u/c1ed433b7fb757f46167c1c40aa71864.jpg", category: "200" },
+            { id: 2, name: "Casual Jacket", price: 200, color: "Mixed", img: "https://img.sanishtech.com/u/ee19fea245f117d0e8aef8d18be5ecd1.jpg", category: "200" },
+            { id: 3, name: "Stylish Wear", price: 200, color: "Mixed", img: "https://img.sanishtech.com/u/79616113adfe5ebf5e53ea141800b92c.jpg", category: "200" },
+            { id: 4, name: "Fashion Top", price: 200, color: "Mixed", img: "https://img.sanishtech.com/u/cd747c13f797c2eda30cb83b0e916f65.jpg", category: "200" },
+            { id: 5, name: "Trendy Jacket", price: 200, color: "Mixed", img: "https://img.sanishtech.com/u/c5adac9269ac7e823ddc792e7ffd4493.jpg", category: "200" },
+            { id: 26, name: "Denim Style", price: 200, color: "Mixed", img: "https://img.sanishtech.com/u/217f8bf8cb040d1edfa16f0f572e43eb.jpg", category: "200" },
+            { id: 27, name: "Urban Outfit", price: 200, color: "Mixed", img: "https://img.sanishtech.com/u/082f997de8032803da4ab77b6521314e.jpg", category: "200" },
+            { id: 30, name: "Winter Wear", price: 200, color: "Mixed", img: "https://img.sanishtech.com/u/bc4ceae21bc8e3aed1c9848f5604bc60.jpg", category: "200" },
+            { id: 16, name: "Special Combo Pack", price: 500, color: "Multi", img: "https://img.sanishtech.com/u/7666e9ca27a0c39bb971915fe9f85a0a.jpg", category: "500" },
+            { id: 31, name: "Premium Set", price: 300, color: "Mixed", img: "https://img.sanishtech.com/u/9fe162d5cb4ec0bb6903dda5d4d44a04.jpg", category: "300" },
+            { id: 33, name: "Designer Collection", price: 300, color: "Mixed", img: "https://img.sanishtech.com/u/751f49349fc03dd5cc3dd9c600e812aa.webp", category: "300" },
+            { id: 17, name: "Basic Item", price: 100, color: "Mixed", img: "https://img.sanishtech.com/u/9e96a5205a6bd4dd5d97fe4ce46a8332.jpg", category: "100" },
+            { id: 21, name: "Accessory 1", price: 100, color: "Mixed", img: "https://img.sanishtech.com/u/0b986d4abb3c7bc4b18523f216140248.jpg", category: "100" },
+        ];
+
+        const App = () => {
+            const [currentView, setCurrentView] = useState('login');
+            const [cart, setCart] = useState([]);
+            const [shoeSize, setShoeSize] = useState('8');
+            const [loginDetails, setLoginDetails] = useState({ name: '', phone: '' });
+            
+            const [address, setAddress] = useState({ house: '', area: '', city: '', state: '', pin: '', altPhone: '' });
+            const [utr, setUtr] = useState('');
+            const [utrError, setUtrError] = useState(false);
+            const [selectedSizes, setSelectedSizes] = useState({});
+            const [showPopup, setShowPopup] = useState(false);
+
+            const DELIVERY_FEE = 20;
+
+            const handleSizeChange = (productId, size) => {
+                setSelectedSizes(prev => ({ ...prev, [productId]: size }));
+            };
+
+            const addToCart = (product) => {
+                const size = selectedSizes[product.id] || 'Free Size'; 
+                
+                setCart(prev => {
+                    const existing = prev.find(item => item.id === product.id && item.size === size);
+                    if (existing) {
+                        return prev.map(item => (item.id === product.id && item.size === size) ? { ...item, quantity: item.quantity + 1 } : item);
+                    }
+                    return [...prev, { ...product, quantity: 1, size: size }];
+                });
+                
+                setShowPopup(true);
+                setTimeout(() => setShowPopup(false), 3500);
+            };
+
+            const updateQuantity = (id, size, delta) => {
+                setCart(prev => prev.map(item => {
+                    if (item.id === id && item.size === size) {
+                        const newQ = item.quantity + delta;
+                        return newQ > 0 ? { ...item, quantity: newQ } : item;
+                    }
+                    return item;
+                }).filter(item => item.quantity > 0));
+            };
+
+            const totals = useMemo(() => {
+                let total200Count = 0; let rawTotal = 0;
+                cart.forEach(item => {
+                    rawTotal += item.price * item.quantity;
+                    if (item.category === '200' || item.category === '200_top') total200Count += item.quantity;
+                });
+                const groupsOf3 = Math.floor(total200Count / 3);
+                const remainder = total200Count % 3;
+                const priceFor200s = (groupsOf3 * 500) + (remainder * 200);
+
+                let otherTotal = 0;
+                cart.forEach(item => { if (item.category !== '200' && item.category !== '200_top') otherTotal += item.price * item.quantity; });
+
+                const itemsTotal = priceFor200s + otherTotal;
+                const discount = rawTotal - itemsTotal;
+                const finalTotal = itemsTotal > 0 ? itemsTotal + DELIVERY_FEE : 0;
+                const hasFreeShoes = itemsTotal >= 500;
+                const itemCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
+
+                return { rawTotal, itemsTotal, discount, finalTotal, hasFreeShoes, itemCount };
+            }, [cart]);
+
+            // GLOBAL BOTTOM NAV COMPONENT
+            const renderBottomNav = () => (
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center py-2 z-50 max-w-md mx-auto text-xs font-medium text-gray-500 pb-3">
+                    <div onClick={() => setCurrentView('home')} className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${currentView === 'home' ? 'meesho-text-pink' : 'hover:text-gray-800'}`}>
+                        <i className="fa-solid fa-house text-lg"></i><span>Home</span>
+                    </div>
+                    <div onClick={() => setCurrentView('categories')} className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${currentView === 'categories' ? 'meesho-text-pink' : 'hover:text-gray-800'}`}>
+                        <i className="fa-solid fa-shirt text-lg"></i><span>Categories</span>
+                    </div>
+                    <div onClick={() => setCurrentView('orders')} className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${currentView === 'orders' ? 'meesho-text-pink' : 'hover:text-gray-800'}`}>
+                        <i className="fa-solid fa-box text-lg"></i><span>My Orders</span>
+                    </div>
+                    <div onClick={() => setCurrentView('account')} className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${currentView === 'account' ? 'meesho-text-pink' : 'hover:text-gray-800'}`}>
+                        <i className="fa-solid fa-user text-lg"></i><span>Account</span>
+                    </div>
+                </div>
+            );
+
+            // 1. ACCOUNT / PROFILE PAGE
+            const renderAccount = () => (
+                <div className="min-h-screen bg-gray-50 pb-20">
+                    <div className="bg-white p-4 flex items-center gap-4 border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+                        <i className="fa-solid fa-arrow-left text-lg cursor-pointer text-gray-600" onClick={() => setCurrentView('home')}></i>
+                        <h2 className="text-base font-bold text-gray-800 flex-1">ACCOUNT</h2>
+                        <i className="fa-solid fa-cart-shopping text-gray-600 cursor-pointer" onClick={() => setCurrentView('cart')}></i>
+                    </div>
+                    
+                    <div className="bg-white p-4 mb-2 flex items-center gap-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50">
+                        <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center text-[#9f2089] text-3xl border border-pink-200">
+                            <i className="fa-solid fa-user"></i>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-lg text-gray-800">{loginDetails.name || 'User'}</h3>
+                            <p className="text-gray-500 text-sm font-medium">+91 {loginDetails.phone || '9876543210'}</p>
+                        </div>
+                        <i className="fa-solid fa-chevron-right ml-auto text-gray-400"></i>
+                    </div>
+
+                    <div className="flex bg-white py-4 px-4 mb-2 border-y border-gray-200 gap-4">
+                        <div className="flex-1 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-gray-50">
+                            <i className="fa-solid fa-headset text-blue-500 text-xl"></i>
+                            <span className="text-sm font-bold text-gray-700">Help Centre</span>
+                        </div>
+                        <div className="flex-1 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-gray-50">
+                            <i className="fa-solid fa-language text-purple-500 text-xl"></i>
+                            <span className="text-sm font-bold text-gray-700">Change Language</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white px-4 py-2 mb-2 border-y border-gray-200">
+                        <p className="font-bold text-gray-800 mb-2 text-sm">My Payments</p>
+                        <div className="flex items-center gap-4 py-3 border-b border-gray-100 cursor-pointer">
+                            <i className="fa-solid fa-building-columns text-blue-500 text-lg w-5 text-center"></i> 
+                            <span className="font-medium text-sm text-gray-700">Bank & UPI Details</span>
+                        </div>
+                        <div className="flex items-center gap-4 py-3 cursor-pointer">
+                            <i className="fa-regular fa-credit-card text-blue-500 text-lg w-5 text-center"></i> 
+                            <span className="font-medium text-sm text-gray-700">Payments & Refunds</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white px-4 py-2 border-y border-gray-200 mb-8">
+                        <p className="font-bold text-gray-800 mb-2 text-sm">My Activity</p>
+                        <div className="flex items-center gap-4 py-3 border-b border-gray-100 cursor-pointer">
+                            <i className="fa-solid fa-heart text-red-500 text-lg w-5 text-center"></i> 
+                            <span className="font-medium text-sm text-gray-700">Wishlisted Products</span>
+                        </div>
+                        <div className="flex items-center gap-4 py-3 border-b border-gray-100 cursor-pointer">
+                            <i className="fa-solid fa-share-nodes text-purple-500 text-lg w-5 text-center"></i> 
+                            <span className="font-medium text-sm text-gray-700">Shared Products</span>
+                        </div>
+                        <div className="flex items-center gap-4 py-3 cursor-pointer text-red-500" onClick={() => setCurrentView('login')}>
+                            <i className="fa-solid fa-arrow-right-from-bracket text-lg w-5 text-center"></i> 
+                            <span className="font-bold text-sm">Sign Out</span>
+                        </div>
+                    </div>
+
+                    {renderBottomNav()}
+                </div>
+            );
+
+            // 2. CATEGORIES PAGE
+            const renderCategories = () => (
+                <div className="min-h-screen bg-white pb-20">
+                    <div className="p-4 border-b border-gray-200 sticky top-0 z-40 bg-white flex items-center gap-3 shadow-sm">
+                        <h2 className="text-base font-bold text-gray-800">CATEGORIES</h2>
+                    </div>
+                    
+                    <div className="flex min-h-[80vh]">
+                        {/* Sidebar */}
+                        <div className="w-1/3 bg-gray-50 border-r border-gray-200 flex flex-col">
+                            <div className="py-4 px-2 text-center bg-white border-l-4 border-[#9f2089] text-[#9f2089] font-bold text-xs">Popular</div>
+                            <div className="py-4 px-2 text-center text-gray-600 font-medium text-xs border-b border-gray-200">Women Ethnic</div>
+                            <div className="py-4 px-2 text-center text-gray-600 font-medium text-xs border-b border-gray-200">Men</div>
+                            <div className="py-4 px-2 text-center text-gray-600 font-medium text-xs border-b border-gray-200">Kids</div>
+                            <div className="py-4 px-2 text-center text-gray-600 font-medium text-xs border-b border-gray-200">Electronics</div>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="w-2/3 p-4">
+                            <p className="font-bold text-gray-800 mb-4 text-sm">Popular Categories</p>
+                            <div className="grid grid-cols-2 gap-3 text-center">
+                                <div className="cursor-pointer" onClick={() => setCurrentView('home')}>
+                                    <img src="https://img.sanishtech.com/u/509cc1bf227d777146d395a8f4de1525.png" className="w-16 h-16 rounded-full mx-auto object-cover border border-gray-200" />
+                                    <p className="text-[10px] font-medium text-gray-700 mt-2">Mens Hoodies</p>
+                                </div>
+                                <div className="cursor-pointer" onClick={() => setCurrentView('home')}>
+                                    <img src="https://img.sanishtech.com/u/9fe162d5cb4ec0bb6903dda5d4d44a04.jpg" className="w-16 h-16 rounded-full mx-auto object-cover border border-gray-200" />
+                                    <p className="text-[10px] font-medium text-gray-700 mt-2">Party Wear</p>
+                                </div>
+                                <div className="cursor-pointer" onClick={() => setCurrentView('home')}>
+                                    <img src="https://img.sanishtech.com/u/74ba70794eadfb51bb06818d11493d40.jpg" className="w-16 h-16 rounded-full mx-auto object-cover border border-gray-200" />
+                                    <p className="text-[10px] font-medium text-gray-700 mt-2">Streetwear</p>
+                                </div>
+                                <div className="cursor-pointer" onClick={() => setCurrentView('home')}>
+                                    <img src="https://img.sanishtech.com/u/c1ed433b7fb757f46167c1c40aa71864.jpg" className="w-16 h-16 rounded-full mx-auto object-cover border border-gray-200" />
+                                    <p className="text-[10px] font-medium text-gray-700 mt-2">Jackets</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {renderBottomNav()}
+                </div>
+            );
+
+            // 3. MY ORDERS PAGE
+            const renderOrders = () => (
+                <div className="min-h-screen bg-gray-50 pb-20">
+                    <div className="bg-white p-4 border-b border-gray-200 sticky top-0 z-40 shadow-sm flex items-center gap-3">
+                        <i className="fa-solid fa-arrow-left text-lg cursor-pointer text-gray-600" onClick={() => setCurrentView('home')}></i>
+                        <h2 className="text-base font-bold text-gray-800">MY ORDERS</h2>
+                        <i className="fa-solid fa-magnifying-glass ml-auto text-gray-600"></i>
+                    </div>
+                    
+                    <div className="p-3">
+                        <div className="bg-white p-8 rounded-lg border border-gray-200 text-center mt-2 shadow-sm">
+                            <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto flex items-center justify-center mb-4">
+                                <i className="fa-solid fa-box-open text-4xl text-gray-300"></i>
+                            </div>
+                            <p className="font-bold text-gray-800 text-lg mb-1">No orders found</p>
+                            <p className="text-sm text-gray-500 mb-6">Looks like you haven't placed an order successfully yet.</p>
+                            <button onClick={() => setCurrentView('home')} className="bg-[#9f2089] text-white font-bold py-2.5 px-8 rounded text-sm w-full">
+                                Start Shopping
+                            </button>
+                        </div>
+                    </div>
+                    {renderBottomNav()}
+                </div>
+            );
+
+            const renderLogin = () => (
+                <div className="min-h-screen bg-gray-100 flex flex-col justify-end">
+                    <div className="bg-white rounded-t-3xl p-6 shadow-[0_-10px_20px_rgba(0,0,0,0.1)]">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-gray-800">Sign up to continue</h2>
+                            <i className="fa-solid fa-xmark text-gray-400 text-xl cursor-pointer"></i>
+                        </div>
+                        
+                        <form onSubmit={(e) => { e.preventDefault(); if(loginDetails.name && loginDetails.phone.length >= 10) setCurrentView('home'); }} className="space-y-6">
+                            <div className="border-b border-gray-300 pb-1">
+                                <label className="text-xs text-meesho-text-pink font-medium">Full Name</label>
+                                <input type="text" required value={loginDetails.name} onChange={e => setLoginDetails({...loginDetails, name: e.target.value})} className="w-full py-1 text-gray-800 focus:outline-none text-lg font-medium" />
+                            </div>
+                            
+                            <div className="flex items-end gap-3 border-b border-meesho-text-pink pb-1">
+                                <div className="flex flex-col border-r border-gray-300 pr-3">
+                                    <label className="text-xs text-gray-400 font-medium">Country</label>
+                                    <div className="flex items-center gap-1 text-lg font-medium text-gray-800">
+                                        <span>🇮🇳</span> +91
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="text-xs text-meesho-text-pink font-medium">Phone Number</label>
+                                    <input type="tel" required value={loginDetails.phone} onChange={e => setLoginDetails({...loginDetails, phone: e.target.value.replace(/[^0-9]/g, '')})} maxLength="10" className="w-full py-1 text-gray-800 focus:outline-none text-lg font-medium" />
+                                </div>
+                            </div>
+                            
+                            <button type="submit" className="w-full meesho-pink text-white font-bold py-3.5 rounded text-lg mt-4">
+                                Continue
+                            </button>
+                            
+                            <p className="text-xs text-center text-gray-500 mt-4">
+                                By continuing, you agree to Meesho's <span className="meesho-text-pink">Terms & Conditions</span> and <span className="meesho-text-pink">Privacy Policy</span>
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            const renderHome = () => (
+                <div className="pb-20 bg-gray-50 min-h-screen relative">
+                    <div className="bg-white p-3 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentView('account')}>
+                            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-400 text-xl border border-orange-200">
+                                <i className="fa-solid fa-user"></i>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 font-medium">Welcome</p>
+                                <p className="text-sm font-bold meesho-text-pink">{loginDetails.name ? loginDetails.name.split(' ')[0] : 'User'} <i className="fa-solid fa-chevron-right text-[10px]"></i></p>
+                            </div>
+                        </div>
+                        <div className="flex gap-4 text-xl text-gray-700">
+                            <i className="fa-regular fa-heart cursor-pointer" onClick={() => setCurrentView('account')}></i>
+                            <div className="relative cursor-pointer" onClick={() => setCurrentView('cart')}>
+                                <i className="fa-solid fa-cart-shopping"></i>
+                                {totals.itemCount > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">{totals.itemCount}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white px-3 pb-3 border-b border-gray-200">
+                        <div className="bg-gray-100 rounded-md p-2.5 flex items-center gap-2 border border-gray-200">
+                            <i className="fa-solid fa-magnifying-glass text-gray-400"></i>
+                            <input type="text" placeholder="Search by Keyword or Product ID" className="bg-transparent flex-1 focus:outline-none text-sm" readOnly />
+                            <i className="fa-solid fa-microphone text-gray-400"></i>
+                            <i className="fa-solid fa-camera text-gray-400 ml-2"></i>
+                        </div>
+                    </div>
+
+                    <div className="p-3">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Upto</p>
+                                <p className="text-xl font-black text-green-700">₹300 OFF <span className="text-sm font-medium text-gray-600">on combo orders</span></p>
+                            </div>
+                            <div className="bg-green-100 p-2 rounded text-green-600">
+                                <i className="fa-solid fa-tags"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex bg-white py-2 mb-2 shadow-sm text-[11px] font-medium text-gray-700">
+                        <div className="flex-1 flex justify-center items-center gap-1 border-r border-gray-200"><i className="fa-solid fa-box-open text-purple-500"></i> Easy Return</div>
+                        <div className="flex-1 flex justify-center items-center gap-1 border-r border-gray-200"><i className="fa-solid fa-money-bill-1-wave text-green-500"></i> Secure Pay</div>
+                        <div className="flex-1 flex justify-center items-center gap-1"><i className="fa-solid fa-tag text-pink-500"></i> Lowest Price</div>
+                    </div>
+
+                    <div className="p-2 grid grid-cols-2 gap-2">
+                        {products.map(product => (
+                            <div key={product.id} className="bg-white rounded border border-gray-200 overflow-hidden flex flex-col hover:shadow-md transition">
+                                <div className="relative aspect-[3/4]">
+                                    <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
+                                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+                                        <p className="text-white font-bold text-lg">₹{product.price}</p>
+                                    </div>
+                                </div>
+                                <div className="p-2 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-700 font-medium truncate">{product.name}</p>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            {product.oldPrice && <p className="text-xs text-gray-400 line-through">₹{product.oldPrice}</p>}
+                                            <p className="text-[10px] bg-gray-100 px-1 py-0.5 rounded text-gray-600 font-medium">Free Delivery</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <select 
+                                        value={selectedSizes[product.id] || 'Free Size'} 
+                                        onChange={(e) => handleSizeChange(product.id, e.target.value)}
+                                        className="w-full mt-2 bg-gray-50 border border-gray-300 rounded px-1 py-1 text-xs text-gray-700 focus:outline-none"
+                                    >
+                                        <option value="Free Size">Free Size</option>
+                                        <option value="XS">Size: XS</option><option value="S">Size: S</option><option value="M">Size: M</option>
+                                        <option value="L">Size: L</option><option value="XL">Size: XL</option><option value="XXL">Size: XXL</option>
+                                    </select>
+                                    <button onClick={() => addToCart(product)} className="w-full mt-2 border border-[#9f2089] text-[#9f2089] py-1.5 rounded text-sm font-bold hover:bg-pink-50 transition">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {showPopup && (
+                        <div 
+                            onClick={() => setCurrentView('cart')} 
+                            className="fixed bottom-[4.5rem] left-4 right-4 bg-[#038d63] text-white p-4 rounded-lg shadow-[0_10px_25px_rgba(3,141,99,0.3)] z-[60] flex items-center justify-between cursor-pointer animate-slide-up border border-green-500"
+                            style={{maxWidth: '26rem', margin: '0 auto'}}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/20 p-2 rounded-full h-8 w-8 flex items-center justify-center">
+                                    <i className="fa-solid fa-cart-arrow-down text-white"></i>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-sm">Added to Cart!</p>
+                                    <p className="text-[10px] text-green-100 font-medium">Tap to checkout your items</p>
+                                </div>
+                            </div>
+                            <div className="bg-white text-[#038d63] text-xs font-bold px-3 py-1.5 rounded uppercase flex items-center gap-1 shadow-sm">
+                                Checkout <i className="fa-solid fa-chevron-right text-[10px]"></i>
+                            </div>
+                        </div>
+                    )}
+
+                    {renderBottomNav()}
+                </div>
+            );
+
+            const renderCart = () => (
+                <div className="min-h-screen bg-gray-100 pb-24">
+                    <div className="bg-white p-4 flex items-center gap-4 border-b border-gray-200 sticky top-0 z-40">
+                        <i className="fa-solid fa-arrow-left text-lg cursor-pointer" onClick={() => setCurrentView('home')}></i>
+                        <h2 className="text-base font-bold text-gray-800 flex-1">REVIEW YOUR ORDER</h2>
+                        <span className="text-blue-500 text-xs font-bold bg-blue-50 px-2 py-1 rounded-full border border-blue-200">STEP 1/2</span>
+                    </div>
+
+                    {cart.length === 0 ? (
+                        <div className="text-center py-20 bg-white mt-2 border-b border-gray-200">
+                            <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto flex items-center justify-center mb-4">
+                                <i className="fa-solid fa-cart-shopping text-4xl text-gray-300"></i>
+                            </div>
+                            <p className="text-gray-500 font-bold mb-4">Your cart is empty</p>
+                            <button onClick={() => setCurrentView('home')} className="border border-[#9f2089] text-[#9f2089] font-bold py-2 px-6 rounded text-sm">
+                                View Products
+                            </button>
+                        </div>
+                    ) : (
+                        <div>
+                            {totals.discount > 0 && (
+                                <div className="bg-green-50 border-b border-green-100 p-2 text-center text-xs font-bold text-green-700 flex items-center justify-center gap-2">
+                                    <span>✨</span> ₹{totals.discount} OFF on this combo order! <span>✨</span>
+                                </div>
+                            )}
+
+                            <div className="mt-2">
+                                {cart.map((item, idx) => (
+                                    <div key={idx} className="bg-white p-3 mb-2 border-y border-gray-200 shadow-sm">
+                                        <div className="flex gap-3">
+                                            <div className="w-20 h-24 border border-gray-200 rounded">
+                                                <img src={item.img} className="w-full h-full object-cover rounded" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-gray-800 line-clamp-1">{item.name}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <p className="text-base font-bold text-gray-900">₹{item.price}</p>
+                                                    <p className="text-xs text-green-600 font-bold">Free Delivery</p>
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-1">Size: <span className="font-bold text-gray-700">{item.size}</span></p>
+                                                
+                                                <div className="mt-3 flex items-center gap-3">
+                                                    <button onClick={() => updateQuantity(item.id, item.size, -1)} className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 font-bold hover:bg-gray-50">-</button>
+                                                    <span className="font-bold text-sm">{item.quantity}</span>
+                                                    <button onClick={() => updateQuantity(item.id, item.size, 1)} className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-gray-600 font-bold hover:bg-gray-50">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="border-t border-gray-100 mt-3 pt-2 text-[11px] text-gray-500 font-medium">
+                                            Sold by: OLN BRANDS
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {totals.hasFreeShoes && (
+                                    <div className="bg-white p-3 mb-2 border-y border-gray-200 flex gap-3 items-center shadow-sm">
+                                        <img src="https://img.sanishtech.com/u/9e96a5205a6bd4dd5d97fe4ce46a8332.jpg" className="w-12 h-12 rounded border border-gray-200 object-cover" />
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-green-600 mb-1">🎁 FREE GIFT UNLOCKED</p>
+                                            <select value={shoeSize} onChange={e => setShoeSize(e.target.value)} className="bg-gray-50 border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 font-medium w-full">
+                                                <option value="6">Shoe Size: UK 6</option><option value="7">Shoe Size: UK 7</option>
+                                                <option value="8">Shoe Size: UK 8</option><option value="9">Shoe Size: UK 9</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-white p-4 mb-24 border-y border-gray-200">
+                                <p className="font-bold text-gray-800 mb-3 text-sm">Price Details</p>
+                                <div className="flex justify-between text-xs text-gray-600 mb-2"><span>Total Product Price</span><span>₹{totals.rawTotal}</span></div>
+                                {totals.discount > 0 && <div className="flex justify-between text-xs text-green-600 font-bold mb-2"><span>Combo Discount</span><span>-₹{totals.discount}</span></div>}
+                                <div className="flex justify-between text-xs text-gray-600 mb-3 pb-3 border-b border-gray-100"><span>Delivery Fee</span><span>₹{DELIVERY_FEE}</span></div>
+                                <div className="flex justify-between font-bold text-gray-900"><span>Order Total</span><span>₹{totals.finalTotal}</span></div>
+                            </div>
+
+                            <div className="bottom-checkout-bar">
+                                <div>
+                                    <p className="text-lg font-bold text-gray-900">₹{totals.finalTotal}</p>
+                                    <p className="text-[10px] font-bold meesho-text-pink">VIEW PRICE DETAILS</p>
+                                </div>
+                                <button onClick={() => setCurrentView('address')} className="meesho-pink text-white font-bold py-2.5 px-8 rounded text-sm">
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const renderAddress = () => (
+                <div className="min-h-screen bg-gray-100 flex flex-col pb-24">
+                    <div className="bg-white p-4 flex items-center gap-4 border-b border-gray-200 sticky top-0 z-40">
+                        <i className="fa-solid fa-arrow-left text-lg cursor-pointer" onClick={() => setCurrentView('cart')}></i>
+                        <h2 className="text-base font-bold text-gray-800 flex-1">DELIVERY ADDRESS</h2>
+                    </div>
+                    
+                    <form onSubmit={(e) => { e.preventDefault(); setCurrentView('payment'); }} className="bg-white p-4 mt-2 space-y-4">
+                        <div className="flex items-center gap-2 mb-4 text-sm font-bold text-gray-800 border-b border-gray-100 pb-2">
+                            <i className="fa-solid fa-location-dot meesho-text-pink"></i> Contact & Location
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                                <label className="text-xs text-gray-500 font-medium">House no./ Building Name</label>
+                                <input type="text" required value={address.house} onChange={e => setAddress({...address, house: e.target.value})} className="w-full border-b border-gray-300 py-2 text-sm focus:border-[#9f2089] outline-none" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="text-xs text-gray-500 font-medium">Road Name, Area, Colony</label>
+                                <input type="text" required value={address.area} onChange={e => setAddress({...address, area: e.target.value})} className="w-full border-b border-gray-300 py-2 text-sm focus:border-[#9f2089] outline-none" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-500 font-medium">Pincode</label>
+                                <input type="text" required value={address.pin} onChange={e => setAddress({...address, pin: e.target.value.replace(/[^0-9]/g, '')})} maxLength="6" className="w-full border-b border-gray-300 py-2 text-sm focus:border-[#9f2089] outline-none" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-500 font-medium">City</label>
+                                <input type="text" required value={address.city} onChange={e => setAddress({...address, city: e.target.value})} className="w-full border-b border-gray-300 py-2 text-sm focus:border-[#9f2089] outline-none" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="text-xs text-gray-500 font-medium">State</label>
+                                <input type="text" required value={address.state} onChange={e => setAddress({...address, state: e.target.value})} className="w-full border-b border-gray-300 py-2 text-sm focus:border-[#9f2089] outline-none" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="text-xs text-gray-500 font-medium">Alternate Phone (Optional)</label>
+                                <input type="tel" value={address.altPhone} onChange={e => setAddress({...address, altPhone: e.target.value.replace(/[^0-9]/g, '')})} maxLength="10" className="w-full border-b border-gray-300 py-2 text-sm focus:border-[#9f2089] outline-none" />
+                            </div>
+                        </div>
+
+                        <div className="bottom-checkout-bar">
+                            <div className="text-left w-full mr-4">
+                                <p className="text-xs text-gray-500">Deliver to:</p>
+                                <p className="text-sm font-bold text-gray-800 line-clamp-1">{loginDetails.name}</p>
+                            </div>
+                            <button type="submit" className="meesho-pink text-white font-bold py-2.5 px-6 rounded text-sm w-full">
+                                Save Address & Continue
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            );
+
+            const renderPayment = () => (
+                <div className="min-h-screen bg-gray-100 pb-24">
+                    <div className="bg-white p-4 flex items-center gap-4 border-b border-gray-200 sticky top-0 z-40">
+                        <i className="fa-solid fa-arrow-left text-lg cursor-pointer" onClick={() => setCurrentView('address')}></i>
+                        <h2 className="text-base font-bold text-gray-800 flex-1">PAYMENT METHOD</h2>
+                        <span className="text-blue-500 text-xs font-bold bg-blue-50 px-2 py-1 rounded-full border border-blue-200">STEP 2/2</span>
+                    </div>
+
+                    <div className="p-3">
+                        <p className="text-sm font-bold text-gray-700 mb-3">Select payment method</p>
+                        
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex gap-3 mb-3 opacity-60">
+                            <div className="font-medium text-gray-500 border-r border-gray-300 pr-3 flex items-center">₹{totals.finalTotal}</div>
+                            <div>
+                                <p className="text-sm font-bold text-gray-700">Cash on Delivery</p>
+                                <p className="text-xs text-gray-500 mt-1">Not supported for this order</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white border border-[#9f2089] rounded-lg overflow-hidden shadow-sm">
+                            <div className="p-3 flex items-start gap-3">
+                                <div className="border-r border-gray-200 pr-3 text-center">
+                                    <p className="text-sm font-bold text-gray-900">₹{totals.finalTotal}</p>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-sm font-bold text-gray-800 flex items-center gap-2">Pay Online <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" className="h-3"/></p>
+                                        <i className="fa-solid fa-circle-check text-[#9f2089]"></i>
+                                    </div>
+                                    <p className="text-xs font-bold text-[#038d63] mt-1 bg-green-50 inline-block px-1 py-0.5 rounded">Extra discount applied</p>
+                                </div>
+                            </div>
+                            <div className="bg-blue-50 p-3 border-t border-blue-100 flex justify-center">
+                                <img src="https://img.sanishtech.com/u/d7a866460a67c80e2733a8529881bad1.png" alt="QR" className="w-32 h-32 rounded border border-gray-300 bg-white p-1 shadow-sm" />
+                            </div>
+                        </div>
+
+                        <div className="mt-4 text-center">
+                            <a href={`upi://pay?pa=hiteshdangi4413-2@okhdfcbank&pn=OLN%20BRANDS&am=${totals.finalTotal}&cu=INR`} 
+                               className="inline-block w-full bg-[#038d63] text-white font-bold py-3.5 rounded text-sm shadow-md">
+                                <i className="fa-solid fa-bolt mr-1 text-yellow-300"></i> PAY NOW VIA APP
+                            </a>
+                        </div>
+
+                        <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4 shadow-sm">
+                            <p className="text-xs text-gray-600 font-medium mb-2 text-center">Please enter your 12-digit UPI Reference Number after payment.</p>
+                            <form onSubmit={(e) => { e.preventDefault(); if(utr.length === 12) setUtrError(true); }}>
+                                <input type="text" placeholder="e.g. 312345678901" required value={utr} onChange={e => { setUtr(e.target.value.replace(/[^0-9]/g, '')); setUtrError(false); }} maxLength="12" className="w-full bg-gray-50 border border-gray-300 rounded p-3 text-sm focus:outline-none focus:border-[#9f2089] mb-3 font-medium tracking-widest text-center" />
+                                {utrError && (
+                                    <div className="text-red-500 text-[11px] font-bold text-center mb-2 flex items-center justify-center gap-1 bg-red-50 p-2 rounded">
+                                        <i className="fa-solid fa-circle-exclamation"></i> Order Not Confirmed! Payment Not Done.
+                                    </div>
+                                )}
+                            </form>
+                        </div>
+                    </div>
+
+                    <div className="bottom-checkout-bar">
+                        <div>
+                            <p className="text-lg font-bold text-gray-900">₹{totals.finalTotal}</p>
+                            <p className="text-[10px] font-bold meesho-text-pink">VIEW PRICE DETAILS</p>
+                        </div>
+                        <button onClick={(e) => { if(utr.length === 12) setUtrError(true); else alert("Please enter 12-digit UTR first!"); }} className="meesho-pink text-white font-bold py-2.5 px-8 rounded text-sm shadow-md">
+                            Place Order
+                        </button>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen bg-gray-50 shadow-xl relative overflow-x-hidden font-sans">
+                    {currentView === 'login' && renderLogin()}
+                    {currentView === 'home' && renderHome()}
+                    {currentView === 'categories' && renderCategories()}
+                    {currentView === 'orders' && renderOrders()}
+                    {currentView === 'account' && renderAccount()}
+                    {currentView === 'cart' && renderCart()}
+                    {currentView === 'address' && renderAddress()}
+                    {currentView === 'payment' && renderPayment()}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
